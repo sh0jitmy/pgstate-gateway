@@ -39,7 +39,6 @@ import (
 	"github.com/sh0jitmy/pgstate-gateway/internal/service"
 	"github.com/sh0jitmy/pgstate-gateway/migrations"
 	"github.com/urfave/cli/v2"
-	"go.uber.org/zap"
 	"golang.org/x/crypto/acme/autocert"
 )
 
@@ -129,9 +128,9 @@ func startSecurePprof() *http.Server {
 	}
 
 	go func() {
-		logger.Log.Info("Starting secure local pprof server...", zap.String("address", srv.Addr))
+		logger.Log.Info("Starting secure local pprof server...", "address", srv.Addr)
 		if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-			logger.Log.Error("pprof server execution failed", zap.Error(err))
+			logger.Log.Error("pprof server execution failed", "error", err)
 		}
 	}()
 
@@ -219,9 +218,9 @@ func runServer(ctx context.Context, configPath string) error {
 		}
 
 		go func() {
-			logger.Log.Info("Starting HTTP-to-HTTPS redirector...", zap.String("addr", cfg.Server.ListenHTTP))
+			logger.Log.Info("Starting HTTP-to-HTTPS redirector...", "addr", cfg.Server.ListenHTTP)
 			if err := redirectSrv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				logger.Log.Error("HTTP redirector failed", zap.Error(err))
+				logger.Log.Error("HTTP redirector failed", "error", err)
 			}
 		}()
 
@@ -235,9 +234,9 @@ func runServer(ctx context.Context, configPath string) error {
 		}
 
 		go func() {
-			logger.Log.Info("Starting HTTPS server with Let's Encrypt...", zap.String("addr", cfg.Server.Listen))
+			logger.Log.Info("Starting HTTPS server with Let's Encrypt...", "addr", cfg.Server.Listen)
 			if err := srv.ListenAndServeTLS("", ""); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				logger.Log.Error("HTTPS server failed to run", zap.Error(err))
+				logger.Log.Error("HTTPS server failed to run", "error", err)
 			}
 		}()
 	} else {
@@ -251,9 +250,9 @@ func runServer(ctx context.Context, configPath string) error {
 		}
 
 		go func() {
-			logger.Log.Info("Starting HTTP server (TLS disabled)...", zap.String("addr", cfg.Server.Listen))
+			logger.Log.Info("Starting HTTP server (TLS disabled)...", "addr", cfg.Server.Listen)
 			if err := srv.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-				logger.Log.Error("HTTP server failed to run", zap.Error(err))
+				logger.Log.Error("HTTP server failed to run", "error", err)
 			}
 		}()
 	}
@@ -266,16 +265,16 @@ func runServer(ctx context.Context, configPath string) error {
 			logger.Log.Info("SIGHUP caught, reloading configuration...")
 			newCfg, err := config.Load(configPath)
 			if err != nil {
-				logger.Log.Error("Failed to reload configuration", zap.Error(err))
+				logger.Log.Error("Failed to reload configuration", "error", err)
 				continue
 			}
 
 			configMgr.Update(newCfg)
 
 			if err := logger.SetLevel(newCfg.Logging.Level); err != nil {
-				logger.Log.Error("Failed to reload log level", zap.Error(err))
+				logger.Log.Error("Failed to reload log level", "error", err)
 			} else {
-				logger.Log.Info("Log level reloaded successfully", zap.String("level", newCfg.Logging.Level))
+				logger.Log.Info("Log level reloaded successfully", "level", newCfg.Logging.Level)
 			}
 
 		case syscall.SIGINT, syscall.SIGTERM:
@@ -288,7 +287,7 @@ func runServer(ctx context.Context, configPath string) error {
 				_ = redirectSrv.Shutdown(shutdownCtx)
 			}
 			if err := srv.Shutdown(shutdownCtx); err != nil {
-				logger.Log.Error("Server shutdown failed", zap.Error(err))
+				logger.Log.Error("Server shutdown failed", "error", err)
 			}
 
 			logger.Log.Info("Server shutdown completed cleanly.")

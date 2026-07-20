@@ -25,7 +25,6 @@ import (
 
 	"github.com/sh0jitmy/pgstate-gateway/internal/logger"
 	"go.opentelemetry.io/otel/trace"
-	"go.uber.org/zap"
 )
 
 type statusWriter struct {
@@ -80,21 +79,21 @@ func RequestLogger() func(http.Handler) http.Handler {
 			// Capture OTel trace information if active
 			spanCtx := trace.SpanContextFromContext(r.Context())
 
-			fields := []zap.Field{
-				zap.String("request_id", reqID),
-				zap.String("method", r.Method),
-				zap.String("path", path),
-				zap.String("workspace", workspace),
-				zap.Int("status", sw.status),
-				zap.Duration("latency", latency),
-				zap.String("remote_ip", getIP(r)),
-				zap.String("user_agent", r.UserAgent()),
+			fields := []any{
+				"request_id", reqID,
+				"method", r.Method,
+				"path", path,
+				"workspace", workspace,
+				"status", sw.status,
+				"latency", latency,
+				"remote_ip", getIP(r),
+				"user_agent", r.UserAgent(),
 			}
 
 			if spanCtx.IsValid() {
 				fields = append(fields,
-					zap.String("trace_id", spanCtx.TraceID().String()),
-					zap.String("span_id", spanCtx.SpanID().String()),
+					"trace_id", spanCtx.TraceID().String(),
+					"span_id", spanCtx.SpanID().String(),
 				)
 			}
 
