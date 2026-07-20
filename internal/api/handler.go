@@ -31,7 +31,6 @@ import (
 	"github.com/sh0jitmy/pgstate-gateway/internal/middleware"
 	"github.com/sh0jitmy/pgstate-gateway/internal/model"
 	"github.com/sh0jitmy/pgstate-gateway/internal/service"
-	"go.uber.org/zap"
 )
 
 type Handler struct {
@@ -96,7 +95,7 @@ func (h *Handler) GetState(w http.ResponseWriter, r *http.Request) {
 
 	state, err := h.stateService.Get(r.Context(), workspace)
 	if err != nil {
-		logger.Log.Error("Failed to fetch state", zap.String("workspace", workspace), zap.Error(err))
+		logger.Log.Error("Failed to fetch state", "workspace", workspace, "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -120,14 +119,14 @@ func (h *Handler) PostState(w http.ResponseWriter, r *http.Request) {
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
-		logger.Log.Error("Failed to read state body", zap.String("workspace", workspace), zap.Error(err))
+		logger.Log.Error("Failed to read state body", "workspace", workspace, "error", err)
 		http.Error(w, "Bad Request", http.StatusBadRequest)
 		return
 	}
 
 	err = h.stateService.Update(r.Context(), workspace, body)
 	if err != nil {
-		logger.Log.Error("Failed to save state", zap.String("workspace", workspace), zap.Error(err))
+		logger.Log.Error("Failed to save state", "workspace", workspace, "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -144,7 +143,7 @@ func (h *Handler) DeleteState(w http.ResponseWriter, r *http.Request) {
 
 	err := h.stateService.Delete(r.Context(), workspace)
 	if err != nil {
-		logger.Log.Error("Failed to delete state", zap.String("workspace", workspace), zap.Error(err))
+		logger.Log.Error("Failed to delete state", "workspace", workspace, "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -176,7 +175,7 @@ func (h *Handler) LockState(w http.ResponseWriter, r *http.Request) {
 
 	acquired, err := h.lockService.Acquire(r.Context(), &lockReq)
 	if err != nil {
-		logger.Log.Error("Failed to acquire lock", zap.String("workspace", workspace), zap.Error(err))
+		logger.Log.Error("Failed to acquire lock", "workspace", workspace, "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -185,7 +184,7 @@ func (h *Handler) LockState(w http.ResponseWriter, r *http.Request) {
 		metrics.LockConflicts.Inc()
 		currentLock, err := h.lockService.Get(r.Context(), workspace)
 		if err != nil {
-			logger.Log.Error("Failed to retrieve current lock after collision", zap.String("workspace", workspace), zap.Error(err))
+			logger.Log.Error("Failed to retrieve current lock after collision", "workspace", workspace, "error", err)
 			http.Error(w, "Locked", http.StatusLocked)
 			return
 		}
@@ -222,7 +221,7 @@ func (h *Handler) UnlockState(w http.ResponseWriter, r *http.Request) {
 
 	released, err := h.lockService.Release(r.Context(), workspace, lockReq.LockID)
 	if err != nil {
-		logger.Log.Error("Failed to release lock", zap.String("workspace", workspace), zap.Error(err))
+		logger.Log.Error("Failed to release lock", "workspace", workspace, "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -253,7 +252,7 @@ func (h *Handler) Healthz(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	if err := h.pingFunc(ctx); err != nil {
-		logger.Log.Error("Healthcheck failed (DB Ping error)", zap.Error(err))
+		logger.Log.Error("Healthcheck failed (DB Ping error)", "error", err)
 		w.WriteHeader(http.StatusServiceUnavailable)
 		_, _ = w.Write([]byte(`{"status": "error", "message": "database ping failed"}`))
 		return

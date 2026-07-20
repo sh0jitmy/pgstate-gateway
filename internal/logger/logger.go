@@ -18,46 +18,26 @@ package logger
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 var (
-	Log         *zap.Logger
-	atomicLevel zap.AtomicLevel
+	Log         *slog.Logger
+	logLevelVar = new(slog.LevelVar)
 )
 
-type redactingCore struct {
-	zapcore.Core
-}
-
-func newRedactingCore(c zapcore.Core) zapcore.Core {
-	return &redactingCore{Core: c}
-}
-
-func (rc *redactingCore) Write(ent zapcore.Entry, fields []zapcore.Field) error {
-	redactFields(fields)
-	return rc.Core.Write(ent, fields)
-}
-
-func (rc *redactingCore) With(fields []zapcore.Field) zapcore.Core {
-	redactFields(fields)
-	return &redactingCore{Core: rc.Core.With(fields)}
-}
-
-func redactFields(fields []zapcore.Field) {
-	for i := range fields {
-		keyLower := strings.ToLower(fields[i].Key)
-		if keyLower == "password" || keyLower == "token" || keyLower == "secret" || keyLower == "authorization" {
-			fields[i].Type = zapcore.StringType
-			fields[i].String = "[REDACTED]"
-			fields[i].Interface = nil
-			fields[i].Integer = 0
-		}
+func redactAttr(groups []string, a slog.Attr) slog.Attr {
+	// Re-key time to timestamp and format consistently
+	if a.Key == slog.TimeKey && len(groups) == 0 {
+		return slog.String("timestamp", a.Value.Time().Format("2006-01-02T15:04:05.000Z07:00"))
 	}
+	keyLower := strings.ToLower(a.Key)
+	if keyLower == "password" || keyLower == "token" || keyLower == "secret" || keyLower == "authorization" {
+		return slog.String(a.Key, "[REDACTED]")
+	}
+	return a
 }
 
 func Init(levelStr string) error {
@@ -65,19 +45,16 @@ func Init(levelStr string) error {
 	if err != nil {
 		return err
 	}
-	atomicLevel = zap.NewAtomicLevelAt(level)
+	logLevelVar.Set(level)
 
-	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.TimeKey = "timestamp"
-	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	opts := &slog.HandlerOptions{
+		Level:       logLevelVar,
+		AddSource:   true,
+		ReplaceAttr: redactAttr,
+	}
 
-	core := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderConfig),
-		zapcore.AddSync(os.Stdout),
-		atomicLevel,
-	)
-
-	Log = zap.New(newRedactingCore(core), zap.AddCaller())
+	handler := slog.NewJSONHandler(os.Stdout, opts)
+	Log = slog.New(handler)
 	return nil
 }
 
@@ -86,21 +63,21 @@ func SetLevel(levelStr string) error {
 	if err != nil {
 		return err
 	}
-	atomicLevel.SetLevel(level)
+	logLevelVar.Set(level)
 	return nil
 }
 
-func parseLevel(levelStr string) (zapcore.Level, error) {
+func parseLevel(levelStr string) (slog.Level, error) {
 	switch strings.ToLower(levelStr) {
 	case "debug":
-		return zapcore.DebugLevel, nil
+		return slog.LevelDebug, nil
 	case "info":
-		return zapcore.InfoLevel, nil
+		return slog.LevelInfo, nil
 	case "warn", "warning":
-		return zapcore.WarnLevel, nil
+		return slog.LevelWarn, nil
 	case "error":
-		return zapcore.ErrorLevel, nil
+		return slog.LevelError, nil
 	default:
-		return zapcore.InfoLevel, fmt.Errorf("invalid log level: %s", levelStr)
+		return slog.LevelInfo, fmt.Errorf("invalid log level: %s", levelStr)
 	}
 }
