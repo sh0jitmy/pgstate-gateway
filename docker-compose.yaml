@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: tfstate-db
+    environment:
+      POSTGRES_DB: tfstate
+      POSTGRES_USER: terraform
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U terraform -d tfstate"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: tfstate-backend
+    ports:
+      - "8080:443"
+      - "80:80"
+    environment:
+      - TF_HTTP_BACKEND_DATABASE_HOST=db
+      - TF_HTTP_BACKEND_DATABASE_PORT=5432
+      - TF_HTTP_BACKEND_DATABASE_USER=terraform
+      - TF_HTTP_BACKEND_DATABASE_PASSWORD=password
+      - TF_HTTP_BACKEND_DATABASE_DATABASE=tfstate
+      - TF_HTTP_BACKEND_DATABASE_SSLMODE=disable
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - certs:/var/lib/tf-http-backend/certs
+
+volumes:
+  pgdata:
+  certs:

@@ -1,0 +1,35 @@
+server:
+  listen: ":443"
+  listen_http: ":80"
+
+database:
+  host: "localhost"
+  port: 5432
+  user: "terraform"
+  password: "password"
+  database: "tfstate"
+  sslmode: "disable"
+  max_open_conns: 25
+  max_idle_conns: 25
+  conn_max_lifetime: "15m"
+
+https:
+  enabled: false # ローカル開発・検証のためにデフォルトはオフにし、CLIフラグや本番環境でオンにします
+
+auth:
+  basic:
+    username: "terraform"
+    password: "secret-password"
+  bearer_tokens:
+    - "token1"
+    - "token2"
+
+logging:
+  level: "info"
+
+security:
+  rate_limit: 100
+  max_body_size: 52428800 # 50 MB
+  cors:
+    enabled: false
+    allowed_origins: ["*"]

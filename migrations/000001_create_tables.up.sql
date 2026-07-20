@@ -1,0 +1,16 @@
+CREATE TABLE IF NOT EXISTS states (
+    workspace TEXT PRIMARY KEY,
+    state JSONB,
+    serial BIGINT,
+    updated_at TIMESTAMP WITHOUT TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS locks (
+    workspace TEXT PRIMARY KEY,
+    lock_id TEXT NOT NULL,
+    operation TEXT NOT NULL,
+    who TEXT NOT NULL,
+    info TEXT NOT NULL,
+    version TEXT NOT NULL,
+    created TIMESTAMP WITHOUT TIME ZONE NOT NULL
+);

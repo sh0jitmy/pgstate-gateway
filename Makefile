@@ -1,6 +1,6 @@
 # Makefile for Go Development & Custom Skills Management
 
-.PHONY: help check install self-eval generate test fmt lint tidy vulncheck build release-check release-snapshot license-check license-add migration-diff clean openapi-lint publish-pr ai-pr
+.PHONY: help check install self-eval generate test test-integration fmt lint tidy vulncheck build release-check release-snapshot license-check license-add migration-diff clean openapi-lint publish-pr ai-pr
 
 help:
 	@echo "Available commands:"
@@ -12,6 +12,7 @@ help:
 	@echo "    tidy             Run go mod tidy"
 	@echo "    vulncheck        Run govulncheck vulnerability scanner"
 	@echo "    test             Run Go tests with race detector and coverage"
+	@echo "    test-integration Run container-based PostgreSQL integration tests"
 	@echo "    build            Build binary to bin/app"
 	@echo "    release-check    Validate GoReleaser configuration"
 	@echo "    release-snapshot Run GoReleaser snapshot build"
@@ -31,28 +32,19 @@ help:
 # --- Go Development ---
 
 openapi-lint:
-	@echo "==> Running Spectral lint on OpenAPI spec..."
-	@if command -v spectral >/dev/null 2>&1; then \
-		NODE_OPTIONS="--no-deprecation" spectral lint api/openapi.yaml; \
-	elif command -v npx >/dev/null 2>&1; then \
-		NODE_OPTIONS="--no-deprecation" npx -y @stoplight/spectral-cli lint api/openapi.yaml; \
-	else \
-		echo "Spectral CLI is not installed and npx is not available. Please install it."; \
-		exit 1; \
-	fi
+	@echo "==> OpenAPI lint is bypassed (spec is not managed via OpenAPI)."
 
-generate: openapi-lint
-	@echo "==> Generating code from schema..."
-	@go generate ./...
+generate:
+	@echo "==> Bypassing code generation."
 
-fmt: generate
+fmt:
 	@echo "==> Formatting Go source files..."
 	@go fmt ./...
 	@if command -v golangci-lint >/dev/null 2>&1; then \
 		golangci-lint run --fix ./...; \
 	fi
 
-lint: generate
+lint:
 	@echo "==> Running golangci-lint..."
 	@golangci-lint run ./...
 
@@ -64,13 +56,18 @@ vulncheck:
 	@echo "==> Running govulncheck..."
 	@go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 
-test: generate
+test:
 	@bash scripts/check_coverage.sh
 
-build: generate
+test-integration:
+	@echo "==> Running integration tests (requires Docker)..."
+	@go test -v -tags=integration ./test/...
+
+build:
 	@echo "==> Building binary..."
 	@mkdir -p bin
-	@go build -v -o bin/app ./cmd/app
+	$(eval VERSION := $(shell grep -oE '[0-9]+\.[0-9]+\.[0-9]+' version.go))
+	@go build -v -ldflags "-s -w -X main.Version=$(VERSION)" -o bin/tf-http-backend ./cmd/tf-http-backend
 
 release-check:
 	@echo "==> Validating GoReleaser configuration..."

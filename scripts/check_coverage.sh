@@ -12,18 +12,27 @@ echo "==> Running tests with coverage profile..."
 go test -v -race -coverprofile=coverage.out -coverpkg="$COVERPKG" ./...
 
 # internal/service/ および internal/domain/ 配下の合計ステートメントカバー率を検証
-echo "==> Verifying business logic coverage (internal/service, internal/domain)..."
 awk '
 BEGIN { total = 0; covered = 0; }
 /:/ {
     if ($0 ~ /\/internal\/(service|domain)\//) {
-        total += $2;
-        if ($3 > 0) {
-            covered += $2;
+        block = $1;
+        stmt_count = $2;
+        exec_count = $3;
+        
+        statements[block] = stmt_count;
+        if (exec_count > max_exec[block]) {
+            max_exec[block] = exec_count;
         }
     }
 }
 END {
+    for (block in statements) {
+        total += statements[block];
+        if (max_exec[block] > 0) {
+            covered += statements[block];
+        }
+    }
     if (total == 0) {
         print "ERROR: No statements found in internal/service/ or internal/domain/."
         exit 1

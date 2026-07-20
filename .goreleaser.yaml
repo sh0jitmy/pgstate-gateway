@@ -8,7 +8,9 @@ before:
 builds:
   - env:
       - CGO_ENABLED=0
-    main: ./cmd/app
+    main: ./cmd/tf-http-backend
+    ldflags:
+      - -s -w -X main.Version={{.Version}}
     goos:
       - linux
       - darwin

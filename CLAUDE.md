@@ -2,7 +2,7 @@
 
 ## プロジェクトの概要
 
-このプロジェクトは、Go開発向けのテンプレートリポジトリです。
+このプロジェクトは、PostgreSQL バックエンドを備えた、本番環境対応の Terraform / OpenTofu HTTP バックエンドサーバー (`pgstate-gateway`) です。
 本リポジトリには、開発の品質・設計・セキュリティを向上させるための**日本語カスタムスキル（`.claude/skills/`）**が同梱されています。
 
 ## AIエージェント（Claude Code）への指示
@@ -17,7 +17,8 @@
 - **コードフォーマット**: `make fmt`
 - **静的解析の実行**: `make lint`
 - **脆弱性スキャンの実行**: `make vulncheck`
-- **テストの実行**: `make test`
+- **単体テストの実行**: `make test`
+- **統合テストの実行**: `go test -v -tags=integration ./test/...`
 - **ビルドの実行**: `make build`
 
 ### 品質・スキル管理タスク
