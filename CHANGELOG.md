@@ -1,5 +1,9 @@
 # Changelog
 
+## [v0.0.3](https://github.com/sh0jitmy/pgstate-gateway/compare/v0.0.2...v0.0.3) - 2026-07-21
+
+- Create SECURITY.md for security policy by @sh0jitmy in https://github.com/sh0jitmy/pgstate-gateway/pull/10
+
 ## [v0.0.2](https://github.com/sh0jitmy/pgstate-gateway/commits/v0.0.2) - 2026-07-20
 
 - refactor: migrate logging from zap to slog and simplify attribute handling by @sh0jitmy in https://github.com/sh0jitmy/pgstate-gateway/pull/7
